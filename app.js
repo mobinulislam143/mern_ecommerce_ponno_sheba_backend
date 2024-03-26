@@ -45,7 +45,6 @@ app.use((req, res) => {
     res.status(404).json({ status: "error", message: "Not Found" });
   });
 
-  
 
 let URI="mongodb+srv://mobinulislam:8NWFTTL3vZqC2W0L@cluster0.mskd8ua.mongodb.net/awave_market";
 
