@@ -8,5 +8,5 @@ const DataSchema=mongoose.Schema({
     },
     {timestamps:true,versionKey:false}
 )
-const ProductLocationModel=mongoose.model('locations',DataSchema)
+const ProductLocationModel=mongoose.model('productLocations',DataSchema)
 module.exports=ProductLocationModel

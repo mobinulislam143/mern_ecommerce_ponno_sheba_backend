@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken')
 
 exports.EncodeToken = (email, user_id) =>{
-    let Key = "My_Security_321";
+    let Key = "Ramadan_Mobarok_123";
     let EXPIRE = {expiresIn: '24h'}
     let PAYLOAD = {
         email:email,
@@ -11,10 +11,9 @@ exports.EncodeToken = (email, user_id) =>{
 }
 exports.DecodeToken = (Token) => {
     try{
-        let Key = "My_Security_321";
+        let Key = "Ramadan_Mobarok_123";
         return jwt.verify(Token,Key)
     }catch(err){
         return null
-
     }
 }
