@@ -7,5 +7,5 @@ const DataSchema=mongoose.Schema({
     },
     {timestamps:true,versionKey:false}
 )
-const ReportsModel=mongoose.model('reports',DataSchema)
+const ReportsModel=mongoose.model('favourites',DataSchema)
 module.exports=ReportsModel

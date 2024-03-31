@@ -7,16 +7,18 @@ const DataSchema = mongoose.Schema({
     img4:{type:String, required:true},
     img5:{type:String},
     img6:{type:String},
-    des:{type:String, required:true},
     color:{type:String, required:true},
-    size:{type:String, required:true},
-    model:{type:String, required:true},
-    features:{type:String, required:true},
-    condition:{type:String, required:true},
-    productID:{type:mongoose.Schema.Types.ObjectId,required:true},
-    userID:{type:mongoose.Schema.Types.ObjectId,required:true},
+    size:{type:String},
+    model:{type:String},
+    features:{type:String},
+    age:{type:String},
+    edition:{type:String},
+    placeOfOrigin:{type:String},
+    material:{type:String},
+    style:{type:String},
 
-},{timestamp: true, versionKey: false}
+
+},{timestamps: true, versionKey: false}
 )
 
 const ProductDetailModel = mongoose.model('productdetails', DataSchema)

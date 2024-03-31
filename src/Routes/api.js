@@ -1,19 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const UserController = require('../Controller/UserController')
+const ProductController = require('../Controller/ProductController')
+const FavouriteController = require('../Controller/FavouriteController')
+const AdminController = require('../Controller/AdminController')
 const AuthVerifyMiddleware = require('../middleware/AuthVerification')
+const AdminAuthVerification = require('../middleware/AdminAuthVerification')
 
-const multer = require('multer')
+const multer = require('multer');
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, 'uploads/');
+        cb(null, 'uploads/')
     },
     filename: function (req, file, cb) {
-      cb(null, file.originalname);
+        cb(null, file.originalname)
     }
-  }); 
-  const upload = multer({ storage: storage });
+});
+
+const upload = multer({ storage: storage });
+  //Admin manage
+  router.post('/adminCreateProduct', AdminAuthVerification,  upload.array('images', 6), AdminController.createProduct);
+
+  router.get("/getAllProduct", AdminController.getAllProduct) 
+  router.post("/adminLogin", AdminController.login) 
+  router.post('/createCategory', AdminAuthVerification,upload.single('image'), AdminController.createCategory)
+  router.post('/removeCategory', AdminAuthVerification, AdminController.removeCategory)
+  router.post('/createSubCategory', AdminAuthVerification, AdminController.createSubCategory)
+  router.post('/createBrand', AdminAuthVerification, AdminController.createBrand)
+  router.post('/adminDeleteProduct', AdminAuthVerification, AdminController.deleteProduct)
+  router.get('/all-user', AdminAuthVerification, AdminController.getallUser)
+  router.post('/removeUser/:userId', AdminAuthVerification, AdminController.removeUser)
+  router.get('/getAllReport', AdminAuthVerification, AdminController.getAllReport)
+  router.get('/getReportById/:productId', AdminAuthVerification, AdminController.getReportById)
+  
+
+  /////
 
     
 //-----User Manage
@@ -26,5 +48,20 @@ router.post("/deleteAccount", AuthVerifyMiddleware, UserController.deleteAccount
 router.post("/updateImage", AuthVerifyMiddleware, upload.single('image'), UserController.updateImage) 
 router.get("/logout", AuthVerifyMiddleware, UserController.logout) 
 
+// User Product Manage
+router.post('/createUserProduct', AuthVerifyMiddleware, upload.array('images', 6), ProductController.createProduct)
+router.post('/reportProduct/:productId', AuthVerifyMiddleware, ProductController.ReportProduct)
+router.post('/commentProduct/:productId', AuthVerifyMiddleware, ProductController.CommentProduct)
+router.get('/getCommentByProduct/:productId', AuthVerifyMiddleware, ProductController.getCommentByProduct)
+router.get('/usersProduct', AuthVerifyMiddleware, ProductController.usersProduct)
+router.get('/product-details/:productId', AuthVerifyMiddleware, ProductController.productDetailsById)
+router.post('/deleteUserproduct', AuthVerifyMiddleware, ProductController.productDetailsById)
+
+//Favourite product
+router.post('/AddFavourite/:productId', AuthVerifyMiddleware, FavouriteController.AddFavourite)
+router.get('/getFavoriteProduct', AuthVerifyMiddleware, FavouriteController.getFavoriteProduct)
+router.delete('/RemoveFavourite', AuthVerifyMiddleware, FavouriteController.RemoveFavourite)
+// untest api
+router.get('/searchProductbyKeyword/:keyword', AuthVerifyMiddleware, ProductController.searchProductbyKeyword)
 
 module.exports = router

@@ -88,7 +88,7 @@ exports.userLogin = async(req,res) => {
         let otpCheck = await OtpModel.findOne({email:email, status:'1'})
         
         if(otpCheck){
-               let user_id = user._id.toString()
+            let user_id = user._id.toString()
             let token = EncodeToken(email,user_id)
 
             let CookieOption = {expires: new Date(Date.now()+24*60*60*1000), httpOnly:false}
