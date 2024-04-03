@@ -1,29 +1,33 @@
 const ProductModel = require('../models/ProductModel')
 const ReportsModel = require('../models/ReportsModel')
+const CategoryModel = require('../models/CategoryModel')
+const SubCategoryModel = require('../models/SubCategoryModel')
 const ProductDetailsModel = require('../models/ProductDetailsModel')
+const LocationModel = require('../models/LocationModel')
 const CommentModel = require('../models/CommentModel')
 const cloudinary = require('cloudinary').v2
 const mongoose  = require('mongoose')
+const BrandModel = require('../models/BrandsModel')
 const ObjectId = mongoose.Types.ObjectId
 
-exports.createProduct = async(req,res)=>{
-    try{
-        let user_id = new Object(req.headers.user_id)
-        const reqBody = req.body
+exports.createProduct = async (req, res) => {
+    try {
+        const user_id = new Object(req.headers.user_id);
+        const reqBody = req.body;
         const uploadedImages = req.files;
 
-        if(!uploadedImages || Object.keys(uploadedImages).length === 0){
+        if (!uploadedImages || Object.keys(uploadedImages).length === 0) {
             return res.status(400).json({ status: "fail", data: "No images uploaded" });
         }
 
         const imageURLs = [];
-        for (const image of uploadedImages){
-            const result = await cloudinary.uploader.upload(image.path)
-            imageURLs.push(result.secure_url)
+        for (const image of uploadedImages) {
+            const result = await cloudinary.uploader.upload(image.path);
+            imageURLs.push(result.secure_url);
         }
 
-         // Create product details
-         const productDetails = {
+        // Create product details
+        const productDetails = {
             img1: imageURLs[0] || "",
             img2: imageURLs[1] || "",
             img3: imageURLs[2] || "",
@@ -40,7 +44,20 @@ exports.createProduct = async(req,res)=>{
             material: reqBody.material,
             style: reqBody.style
         };
-        const createProductDetails = await ProductDetailsModel.create(productDetails)
+
+        const createProductDetails = await ProductDetailsModel.create(productDetails);
+
+        // Find category by name (case insensitive matching)
+        let category = await CategoryModel.findOne({ categoryName: { $regex: new RegExp('^' + reqBody.categoryName + '$', 'i') } });
+        const categoryID = category ? category._id : null;
+
+        // Find subcategory by name (case insensitive matching)
+        let subcategory = await SubCategoryModel.findOne({ subCategoryName: { $regex: new RegExp('^' + reqBody.subCategoryName + '$', 'i') } });
+        const subcategoryID = subcategory ? subcategory._id : null;
+
+        // Find brand by name (case insensitive matching)
+        let brand = await BrandModel.findOne({ brandName: { $regex: new RegExp('^' + reqBody.brandName + '$', 'i') } });
+        const brandID = brand ? brand._id : null;
 
         // Create product
         const product = await ProductModel.create({
@@ -51,15 +68,26 @@ exports.createProduct = async(req,res)=>{
             discountPrice: reqBody.discountPrice,
             stock: reqBody.stock,
             remark: reqBody.remark,
-            categoryID: new ObjectId(reqBody.categoryID),
+            categoryID,
             productDetailID: createProductDetails._id,
-            subcategoryID: new ObjectId(reqBody.subcategoryID),
-            brandID: new ObjectId(reqBody.brandID),
+            subcategoryID,
+            brandID,
             userID: user_id,
         });
-        res.status(200).json({ status: "success", data: product });    }catch(err){
-        res.status(400).json({status:"fail",data:"product create failed"})
 
+        // Update location (case insensitive matching)
+        await LocationModel.findOneAndUpdate(
+            {
+                division: { $regex: new RegExp('^' + reqBody.division + '$', 'i') },
+                district: { $regex: new RegExp('^' + reqBody.district + '$', 'i') }
+            },
+            { $push: { productIds: new ObjectId(product._id )} },
+            { upsert: true, new: true }
+        );
+
+        res.status(200).json({ status: "success", data: product });
+    } catch (err) {
+        res.status(400).json({ status: "fail", data: "product create failed" });
     }
 }
 
@@ -227,6 +255,94 @@ exports.searchProductbyKeyword = async(req,res)=>{
     }
 }
 
+exports.getAllProduct = async (req, res) => {
+    try {
+        let JoinWithBrandStage = { $lookup: { from: 'brands', localField: 'brandID', foreignField: '_id', as: 'brand' } };
+        let JoinWithCategoryStage = { $lookup: { from: 'categories', localField: 'categoryID', foreignField: '_id', as: 'category' } };
+        let JoinWithSubCategoryStage = { $lookup: { from: 'subcategories', localField: 'subcategoryID', foreignField: '_id', as: 'subcategory' } };
+        let JoinWithProductDetailsStage = { $lookup: { from: 'productdetails', localField: 'productDetailID', foreignField: '_id', as: 'details' } };
+        let JoinWithUserStage = { $lookup: { from: 'users', localField: 'userID', foreignField: '_id', as: 'user' } };
+
+        let UnWindBrandStage = { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } };
+        let UnwindCategoryStage = { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } };
+        let UnwindSubCategoryStage = { $unwind: { path: '$subcategory', preserveNullAndEmptyArrays: true } };
+        let UnwindproductDetailsStage = { $unwind: { path: '$details', preserveNullAndEmptyArrays: true } };
+        let UnwindproductUserStage = { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } };
+
+        let ProjectionStage = { $project: { 'brand._id': 0, 'category._id': 0, 'subcategory._id': 0, 'subcategory.categoryID': 0 } };
+
+        let data = await ProductModel.aggregate([
+            JoinWithBrandStage,
+            JoinWithCategoryStage,
+            JoinWithSubCategoryStage,
+            JoinWithUserStage,
+            JoinWithProductDetailsStage,
+
+            UnWindBrandStage,
+            UnwindCategoryStage,
+            UnwindSubCategoryStage,
+            UnwindproductDetailsStage,
+            UnwindproductUserStage,
+
+            ProjectionStage
+        ]);
+
+        res.status(200).json({ status: "success", data: data });
+    } catch (err) {
+        res.status(400).json({ status: "fail", data: err.toString() });
+    }
+}
+
+
+
+
+
+
+
+
+exports.getdivisions = async(req,res)=>{
+    try{
+        let result = LocationModel.find()
+        res.status(200).json({status: "success", data: result})
+    }catch(err){
+        res.status(400).json({status:"fail",data:err.toString()})
+    }
+}
+exports.getdistrictsbyDivision = async(req,res)=>{
+    try{
+        let division = req.params.division
+        let result = LocationModel.find({division: new RegExp(division, "i")})
+
+        res.status(200).json({status: "success", data: result})
+    }catch(err){
+        res.status(400).json({status:"fail",data:err.toString()})
+    }
+}
+
+
+exports.ProductListByFilter = async(req,res)=>{
+    try{
+        let matchConditions = {}
+        if(req.body['categoryID']){
+            matchConditions.categoryID = new ObjectId(req.body['categoryID'])
+        }
+        if(req.body['subcategoryID']){
+            matchConditions.subcategoryID = new ObjectId(req.body['subcategoryID'])
+        }
+        if(req.body['brandID']){
+            matchConditions.brandID = new ObjectId(req.body['brandID'])
+        }
+        let MatchStage = {$match: matchConditions}
+
+
+
+
+        res.status(200).json({status: "success", data: 'result'})
+    }catch(err){
+        res.status(400).json({status:"fail",data:err.toString()})
+
+    }
+}
 // exports.AllProduct = async(req,res)=>{
 //     try{
 

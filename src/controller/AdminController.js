@@ -5,6 +5,7 @@ const AdminModel = require('../models/AdminModel')
 const ProductModel = require('../models/ProductModel')
 const UserModel = require('../models/UserModel')
 const ReportsModel = require('../models/ReportsModel')
+const LocationModel = require('../models/LocationModel')
 const ProductDetailsModel = require('../models/ProductDetailsModel')
 const { AdminEncodeToken } = require('../utility/TokenHelper')
 const mongoose  = require('mongoose')
@@ -104,24 +105,19 @@ exports.createSubCategory = async(req,res)=>{
 
 exports.createProduct = async (req, res) => {
     try {
-        const user_id = new ObjectId(req.headers.user_id);
+        const user_id = new Object(req.headers.user_id);
         const reqBody = req.body;
-
-        // Access uploaded files from req.files
         const uploadedImages = req.files;
 
         if (!uploadedImages || Object.keys(uploadedImages).length === 0) {
             return res.status(400).json({ status: "fail", data: "No images uploaded" });
         }
-     
 
         const imageURLs = [];
         for (const image of uploadedImages) {
             const result = await cloudinary.uploader.upload(image.path);
             imageURLs.push(result.secure_url);
         }
-      
-       
 
         // Create product details
         const productDetails = {
@@ -142,30 +138,51 @@ exports.createProduct = async (req, res) => {
             style: reqBody.style
         };
 
-        const createdProductDetails = await ProductDetailsModel.create(productDetails)
-         // Create product
-         const product = await ProductModel.create({
+        const createProductDetails = await ProductDetailsModel.create(productDetails);
+
+        // Find category by name (case insensitive matching)
+        let category = await CategoryModel.findOne({ categoryName: { $regex: new RegExp('^' + reqBody.categoryName + '$', 'i') } });
+        const categoryID = category ? category._id : null;
+
+        // Find subcategory by name (case insensitive matching)
+        let subcategory = await SubCategoryModel.findOne({ subCategoryName: { $regex: new RegExp('^' + reqBody.subCategoryName + '$', 'i') } });
+        const subcategoryID = subcategory ? subcategory._id : null;
+
+        // Find brand by name (case insensitive matching)
+        let brand = await BrandsModel.findOne({ brandName: { $regex: new RegExp('^' + reqBody.brandName + '$', 'i') } });
+        const brandID = brand ? brand._id : null;
+
+        // Create product
+        const product = await ProductModel.create({
             title: reqBody.title,
             shortDes: reqBody.shortDes,
             price: reqBody.price,
             discount: reqBody.discount,
             discountPrice: reqBody.discountPrice,
-            star: reqBody.star,
             stock: reqBody.stock,
             remark: reqBody.remark,
-            categoryID: new ObjectId(reqBody.categoryID),
-            productDetailID: createdProductDetails._id,
-            subcategoryID: new ObjectId(reqBody.subcategoryID),
-            brandID: new ObjectId(reqBody.brandID),
+            categoryID,
+            productDetailID: createProductDetails._id,
+            subcategoryID,
+            brandID,
             userID: user_id,
-
         });
+
+        // Update location (case insensitive matching)
+        await LocationModel.findOneAndUpdate(
+            {
+                division: { $regex: new RegExp('^' + reqBody.division + '$', 'i') },
+                district: { $regex: new RegExp('^' + reqBody.district + '$', 'i') }
+            },
+            { $push: { productIds: product._id } },
+            { upsert: true, new: true }
+        );
+
         res.status(200).json({ status: "success", data: product });
     } catch (err) {
-        console.error(err.toString());
-        res.status(500).json({ status: "error", message: err.toString()});
+        res.status(400).json({ status: "fail", data: "product create failed" });
     }
-};
+}
 
 exports.getAllProduct = async(req,res) => {
     try{
@@ -245,6 +262,7 @@ exports.getAllReport = async(req,res) => {
         res.status(400).json({status:"fail",data:err.toString()})
     }
 }
+
 exports.getReportById = async(req,res) => {
     try{
         let productId = req.params.productId
@@ -261,5 +279,31 @@ exports.getReportById = async(req,res) => {
         res.status(200).json({ status: "success", data: result });
     }catch(err){
         res.status(400).json({status:"fail",data:err.toString()})
+    }
+}
+
+///location set
+
+exports.AddLocation = async(req,res) => {
+    try{
+        let reqBody = req.body
+        let result = await LocationModel.create(reqBody)
+        // write all code how to add location
+        res.status(200).json({ status: "success", data: result });
+    }catch(err){
+        res.status(400).json({status:"fail",data:err.toString()})
+    }
+}
+
+exports.removeLocation = async(req,res) => {
+    try{
+        let LocId = new ObjectId(req.params.locId)
+
+         await LocationModel.deleteOne({_id: LocId})
+
+        res.status(200).json({ status: "success", data: "Location Delete Successfully" });
+    }catch(err){
+        res.status(400).json({ status: "fail", message: err.toString() });
+
     }
 }

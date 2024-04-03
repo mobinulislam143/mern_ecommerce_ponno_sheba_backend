@@ -1,11 +1,11 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
-const DataSchema = mongoose.Schema({
-    division: {type: String},
-    district: {type: String},
-    area: {type: String},
+const LocationSchema = mongoose.Schema({
+    division: { type: String },
+    district: { type: String },
+    productIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'products' }]
+}, { timestamps: true, versionKey: false });
 
-},{timestamps: true,versionKey:false})
+const LocationModel = mongoose.model('locations', LocationSchema);
 
-const LocationModel = mongoose.model('locations', DataSchema)
-module.exports = LocationModel
+module.exports = LocationModel;

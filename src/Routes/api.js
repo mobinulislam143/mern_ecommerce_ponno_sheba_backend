@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const UserController = require('../Controller/UserController')
 const ProductController = require('../Controller/ProductController')
+const locationController = require('../Controller/locationController')
 const FavouriteController = require('../Controller/FavouriteController')
 const AdminController = require('../Controller/AdminController')
 const AuthVerifyMiddleware = require('../middleware/AuthVerification')
@@ -24,6 +25,7 @@ const upload = multer({ storage: storage });
 
   router.get("/getAllProduct", AdminController.getAllProduct) 
   router.post("/adminLogin", AdminController.login) 
+  
   router.post('/createCategory', AdminAuthVerification,upload.single('image'), AdminController.createCategory)
   router.post('/removeCategory', AdminAuthVerification, AdminController.removeCategory)
   router.post('/createSubCategory', AdminAuthVerification, AdminController.createSubCategory)
@@ -33,9 +35,16 @@ const upload = multer({ storage: storage });
   router.post('/removeUser/:userId', AdminAuthVerification, AdminController.removeUser)
   router.get('/getAllReport', AdminAuthVerification, AdminController.getAllReport)
   router.get('/getReportById/:productId', AdminAuthVerification, AdminController.getReportById)
-  
+  //loaction set
+  router.post('/AddLocation', AdminAuthVerification, AdminController.AddLocation)
+  router.post('/removeLocation/:locId', AdminAuthVerification, AdminController.removeLocation)
 
-  /////
+  router.get("/getdistricts/:division", locationController.getdistricts)
+  router.get("/getdivision", locationController.getdivision)
+
+
+  router.get("/getdistrictsbyDivision/:division", locationController.ProductByDivision)
+
 
     
 //-----User Manage
@@ -57,11 +66,17 @@ router.get('/usersProduct', AuthVerifyMiddleware, ProductController.usersProduct
 router.get('/product-details/:productId', AuthVerifyMiddleware, ProductController.productDetailsById)
 router.post('/deleteUserproduct', AuthVerifyMiddleware, ProductController.productDetailsById)
 
+router.get('/getallProducts', AuthVerifyMiddleware, ProductController.getAllProduct)
+
+
 //Favourite product
 router.post('/AddFavourite/:productId', AuthVerifyMiddleware, FavouriteController.AddFavourite)
 router.get('/getFavoriteProduct', AuthVerifyMiddleware, FavouriteController.getFavoriteProduct)
 router.delete('/RemoveFavourite', AuthVerifyMiddleware, FavouriteController.RemoveFavourite)
-// untest api
+//Product Listing
 router.get('/searchProductbyKeyword/:keyword', AuthVerifyMiddleware, ProductController.searchProductbyKeyword)
+router.get('/ProductListByFilter', AuthVerifyMiddleware, ProductController.ProductListByFilter)
+// untest api
 
 module.exports = router
+
