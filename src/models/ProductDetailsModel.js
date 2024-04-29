@@ -13,7 +13,6 @@ const DataSchema = mongoose.Schema({
     features:{type:String},
     age:{type:String},
     edition:{type:String},
-    placeOfOrigin:{type:String},
     material:{type:String},
     style:{type:String},
 

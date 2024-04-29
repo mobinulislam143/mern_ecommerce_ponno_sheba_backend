@@ -43,7 +43,8 @@ const upload = multer({ storage: storage });
   router.get("/getdivision", locationController.getdivision)
 
 
-  router.get("/getdistrictsbyDivision/:division", locationController.ProductByDivision)
+  router.get("/getProductByDivision/:division", locationController.ProductByDivision)
+  router.get("/getProductByDistrict/:district", locationController.ProductByDistrict)
 
 
     
@@ -66,7 +67,7 @@ router.get('/usersProduct', AuthVerifyMiddleware, ProductController.usersProduct
 router.get('/product-details/:productId', AuthVerifyMiddleware, ProductController.productDetailsById)
 router.post('/deleteUserproduct', AuthVerifyMiddleware, ProductController.productDetailsById)
 
-router.get('/getallProducts', AuthVerifyMiddleware, ProductController.getAllProduct)
+router.get('/getallProducts',  ProductController.getAllProduct)
 
 
 //Favourite product
