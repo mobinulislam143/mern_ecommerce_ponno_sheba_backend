@@ -23,7 +23,7 @@ const upload = multer({ storage: storage });
   //Admin manage
   router.post('/adminCreateProduct', AdminAuthVerification,  upload.array('images', 6), AdminController.createProduct);
 
-  router.get("/getAllProduct", AdminController.getAllProduct) 
+  router.get("/admingetAllProduct", AdminController.getAllProduct) 
   router.post("/adminLogin", AdminController.login) 
   
   router.post('/createCategory', AdminAuthVerification,upload.single('image'), AdminController.createCategory)
@@ -35,6 +35,7 @@ const upload = multer({ storage: storage });
   router.post('/removeUser/:userId', AdminAuthVerification, AdminController.removeUser)
   router.get('/getAllReport', AdminAuthVerification, AdminController.getAllReport)
   router.get('/getReportById/:productId', AdminAuthVerification, AdminController.getReportById)
+
   //loaction set
   router.post('/AddLocation', AdminAuthVerification, AdminController.AddLocation)
   router.post('/removeLocation/:locId', AdminAuthVerification, AdminController.removeLocation)
@@ -64,7 +65,7 @@ router.post('/reportProduct/:productId', AuthVerifyMiddleware, ProductController
 router.post('/commentProduct/:productId', AuthVerifyMiddleware, ProductController.CommentProduct)
 router.get('/getCommentByProduct/:productId', AuthVerifyMiddleware, ProductController.getCommentByProduct)
 router.get('/usersProduct', AuthVerifyMiddleware, ProductController.usersProduct)
-router.get('/product-details/:productId', AuthVerifyMiddleware, ProductController.productDetailsById)
+router.get('/product-details/:productId',  ProductController.productDetailsById)
 router.post('/deleteUserproduct', AuthVerifyMiddleware, ProductController.productDetailsById)
 
 router.get('/getallProducts',  ProductController.getAllProduct)
@@ -75,8 +76,12 @@ router.post('/AddFavourite/:productId', AuthVerifyMiddleware, FavouriteControlle
 router.get('/getFavoriteProduct', AuthVerifyMiddleware, FavouriteController.getFavoriteProduct)
 router.delete('/RemoveFavourite', AuthVerifyMiddleware, FavouriteController.RemoveFavourite)
 //Product Listing
+router.get('/getAllCategory',  ProductController.getAllCategory)
 router.get('/searchProductbyKeyword/:keyword', AuthVerifyMiddleware, ProductController.searchProductbyKeyword)
-router.get('/ProductListByFilter', AuthVerifyMiddleware, ProductController.ProductListByFilter)
+router.get('/ProductListByFilter',  ProductController.ProductListByFilter)
+router.get('/LocationCategorySearch/:division/:district/:category',  ProductController.LocationCategorySearch)
+
+
 // untest api
 
 module.exports = router

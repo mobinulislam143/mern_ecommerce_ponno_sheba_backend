@@ -19,7 +19,6 @@ exports.createProduct = async (req, res) => {
         if (!uploadedImages || Object.keys(uploadedImages).length === 0) {
             return res.status(400).json({ status: "fail", data: "No images uploaded" });
         }
-
         const imageURLs = [];
         for (const image of uploadedImages) {
             const result = await cloudinary.uploader.upload(image.path);
@@ -92,6 +91,17 @@ exports.createProduct = async (req, res) => {
 }
 
 
+
+
+exports.getAllCategory = async(req,res)=>{
+    try{
+        let result = await CategoryModel.find()
+        res.status(200).json({status: "success", data: result})
+    }catch(err){
+        res.status(400).json({status:"fail",data: err.toString()})
+    }
+}
+
 exports.ReportProduct = async(req,res)=>{
     try{
         let user_id = new Object(req.headers.user_id)
@@ -125,13 +135,24 @@ exports.getCommentByProduct = async(req,res)=>{
         let JoinWithUserStage = { $lookup: { from: 'users',localField: 'userID', foreignField: '_id', as: 'user' }};
         
         let UnwindproductUserStage = {$unwind: '$user'}
-        let ProjectionStage = {$project: {'user._id': 0,'user.age': 0,'user.mobile': 0,'user.address': 0,'user.createdAt': 0,'user.updatedAt': 0,'user.password': 0,'user.confirmPassword': 0, }}
+        let ProjectionStage = {$project: {'user._id': 0,'user.age': 0,'user.mobile': 0,'user.address': 0,'user.createdAt': 0,'user.updatedAt': 0,'user.password': 0,'user.confirmPassword': 0,  }}
+        let AddFieldStage = {
+            $addFields: {
+                createdAt: {
+                    $dateToString:{
+                        date: "$createdAt",
+                        format: "%d-%m-%Y"
+                    }
+                }
+            }
+        }
 
         let result = await CommentModel.aggregate([
             MatchProductStage,
             JoinWithUserStage,
             UnwindproductUserStage,
-            ProjectionStage
+            ProjectionStage,
+            AddFieldStage
         ])
         res.status(200).json({status: "success", data: result})
     }catch(err){
@@ -262,42 +283,52 @@ exports.getAllProduct = async (req, res) => {
         let JoinWithSubCategoryStage = { $lookup: { from: 'subcategories', localField: 'subcategoryID', foreignField: '_id', as: 'subcategory' } };
         let JoinWithProductDetailsStage = { $lookup: { from: 'productdetails', localField: 'productDetailID', foreignField: '_id', as: 'details' } };
         let JoinWithUserStage = { $lookup: { from: 'users', localField: 'userID', foreignField: '_id', as: 'user' } };
+        let JoinWithLocationStage = { $lookup: { from: 'locations', localField: '_id', foreignField: 'productIds', as: 'locations' } };
 
         let UnWindBrandStage = { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } };
         let UnwindCategoryStage = { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } };
         let UnwindSubCategoryStage = { $unwind: { path: '$subcategory', preserveNullAndEmptyArrays: true } };
         let UnwindproductDetailsStage = { $unwind: { path: '$details', preserveNullAndEmptyArrays: true } };
         let UnwindproductUserStage = { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } };
+        let UnwindLocationStage = { $unwind: { path: '$locations', preserveNullAndEmptyArrays: true } };
 
-        let ProjectionStage = { $project: { 'brand._id': 0, 'category._id': 0, 'subcategory._id': 0, 'subcategory.categoryID': 0 } };
+        let ProjectionStage = { $project: { 'brand._id': 0, 'category._id': 0, 'subcategory._id': 0, 'subcategory.categoryID': 0 , } };
 
+        let AddFieldStage = {
+            $addFields: {
+                createdAt: {
+                    $dateToString:{
+                        date: "$createdAt",
+                        format: "%d-%m-%Y"
+                    }
+                }
+            }
+        }
+        
+        let allproduct = await ProductModel.find().count()
         let data = await ProductModel.aggregate([
             JoinWithBrandStage,
             JoinWithCategoryStage,
             JoinWithSubCategoryStage,
             JoinWithUserStage,
             JoinWithProductDetailsStage,
+            JoinWithLocationStage,
 
             UnWindBrandStage,
             UnwindCategoryStage,
             UnwindSubCategoryStage,
             UnwindproductDetailsStage,
             UnwindproductUserStage,
-
+            UnwindLocationStage,
+            AddFieldStage,
             ProjectionStage
         ]);
 
-        res.status(200).json({ status: "success", data: data });
+        res.status(200).json({ status: "success",product: allproduct, data: data });
     } catch (err) {
         res.status(400).json({ status: "fail", data: err.toString() });
     }
 }
-
-
-
-
-
-
 
 
 exports.getdivisions = async(req,res)=>{
@@ -312,36 +343,189 @@ exports.getdistrictsbyDivision = async(req,res)=>{
     try{
         let division = req.params.division
         let result = LocationModel.find({division: new RegExp(division, "i")})
-
         res.status(200).json({status: "success", data: result})
     }catch(err){
         res.status(400).json({status:"fail",data:err.toString()})
     }
 }
 
-
-exports.ProductListByFilter = async(req,res)=>{
-    try{
-        let matchConditions = {}
-        if(req.body['categoryID']){
-            matchConditions.categoryID = new ObjectId(req.body['categoryID'])
+exports.ProductListByFilter = async (req, res) => {
+    try {
+        let matchConditions = {};
+        if (req.body['categoryID']) {
+            matchConditions.categoryID = new ObjectId(req.body['categoryID']);
         }
-        if(req.body['subcategoryID']){
-            matchConditions.subcategoryID = new ObjectId(req.body['subcategoryID'])
+        if (req.body['subcategoryID']) {
+            matchConditions.subcategoryID = new ObjectId(req.body['subcategoryID']);
         }
-        if(req.body['brandID']){
-            matchConditions.brandID = new ObjectId(req.body['brandID'])
+        if (req.body['brandID']) {
+            matchConditions.brandID = new ObjectId(req.body['brandID']);
         }
-        let MatchStage = {$match: matchConditions}
 
+        let locationMatchCondition = {};
+        if (req.body['division']) {
+            locationMatchCondition.division = req.body['division'];
+        }
+        if (req.body['district']) {
+            locationMatchCondition.district = req.body['district'];
+        }
 
+        let LocationLookupStage = {
+            $lookup: {
+                from: 'locations',
+                let: { productId: "$_id" },
+                pipeline: [
+                    {
+                        $match: locationMatchCondition 
+                    },
+                    {
+                        $match: {
+                            $expr: { $in: ["$$productId", "$productIds"] } // Match product IDs
+                        }
+                    },
+                    {
+                        $project: { division: 1, district: 1 } // Project only the necessary fields from the location
+                    }
+                ],
+                as: 'location'
+            }
+        };
+        let ExcludeNoLocationStage = {
+            $match: {
+                location: { $ne: [] } 
+            }
+        };
 
-        res.status(200).json({status: "success", data: 'result'})
-    }catch(err){
-        res.status(400).json({status:"fail",data:err.toString()})
+        let MatchStage = { $match: matchConditions };
 
+        let AddFieldStage = {
+            $addFields: { numericPrice: { $toInt: '$price' } }
+        };
+
+        let minPrice = parseInt(req.body['minPrice']);
+        let maxPrice = parseInt(req.body['maxPrice']);
+
+        let PriceMatchCondition = {};
+
+        if (!isNaN(minPrice)) {
+            PriceMatchCondition['numericPrice'] = { $gte: minPrice };
+        }
+        if (!isNaN(maxPrice)) {
+            PriceMatchCondition['numericPrice'] = { ...(PriceMatchCondition['numericPrice'] || {}), $lte: maxPrice };
+        }
+
+        let PriceMatchStage = { $match: PriceMatchCondition };
+
+        let JoinWithBrandStage = { $lookup: { from: "brands", localField: "brandID", foreignField: "_id", as: 'brand' } };
+        let JoinWithSubCategoryStage = { $lookup: { from: "subcategories", localField: "subcategoryID", foreignField: "_id", as: 'subCategory' } };
+        let JoinWithCategoryStage = { $lookup: { from: 'categories', localField: 'categoryID', foreignField: '_id', as: 'category' } };
+
+        let UnwindBrandStage = { $unwind: "$brand" };
+        let UnwindSubCategoryStage = { $unwind: "$subCategory" };
+        let UnwindCategoryStage = { $unwind: '$category' };
+        let UnwindLocationStage = {
+            $unwind: {
+                path: '$location',
+                preserveNullAndEmptyArrays: true
+            }
+        };
+
+        let data = await ProductModel.aggregate([
+            LocationLookupStage,
+            ExcludeNoLocationStage, 
+            MatchStage,
+            AddFieldStage,
+            PriceMatchStage,
+            JoinWithBrandStage,
+            JoinWithSubCategoryStage,
+            JoinWithCategoryStage,
+            UnwindLocationStage,
+            UnwindCategoryStage,
+            UnwindSubCategoryStage,
+            UnwindBrandStage
+        ]);
+
+        res.status(200).json({ status: "success", data: data });
+    } catch (err) {
+        res.status(400).json({ status: "fail", data: err.toString() });
     }
-}
+};
+
+exports.LocationCategorySearch = async (req, res) => {
+    try {
+        let division = req.params.division;
+        let district = req.params.district;
+        let category = req.params.category;
+
+        // Regular expressions for case-insensitive matching
+        let divisionRegex = new RegExp(division, 'i');
+        let districtRegex = new RegExp(district, 'i');
+        let categoryRegex = new RegExp(category, 'i');
+
+        // Match condition using regular expressions
+        let locationMatchCondition = {
+            $match: {
+                division: { $regex: divisionRegex },
+                district: { $regex: districtRegex }
+            }
+        };
+
+        // Pipeline for location lookup
+        let locationLookupStage = {
+            $lookup: {
+                from: 'locations',
+                let: { productId: "$_id" },
+                pipeline: [
+                    locationMatchCondition,
+                    {
+                        $match: {
+                            $expr: { $in: ["$$productId", "$productIds"] }
+                        }
+                    }
+                ],
+                as: 'location'
+            }
+        };
+
+        // Unwind location array
+        let unwindLocationStage = {
+            $unwind: '$location'
+        };
+        let categoryMatchCondition = {
+            'category.categoryName': { $regex: categoryRegex }
+        };
+
+        let categoryLookupStage = {
+            $lookup: {
+                from: 'categories',
+                localField: 'categoryID',
+                foreignField: '_id',
+                as: 'category'
+            }
+        };
+
+        let unwindCategoryStage = {
+            $unwind: '$category'
+        };
+
+        let pipeline = [
+            locationLookupStage,
+            unwindLocationStage,
+            categoryLookupStage,
+            unwindCategoryStage,
+            { $match: categoryMatchCondition }
+        ];
+
+        // Execute the aggregation pipeline
+        let result = await ProductModel.aggregate(pipeline);
+
+        res.status(200).json({ status: "success", data: result });
+    } catch (err) {
+        res.status(400).json({ status: "fail", data: err.toString() });
+    }
+};
+
+
 // exports.AllProduct = async(req,res)=>{
 //     try{
 

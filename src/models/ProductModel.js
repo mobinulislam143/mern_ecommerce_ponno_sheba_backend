@@ -10,6 +10,7 @@ const DataSchema = mongoose.Schema({
     star:{type:String},
     stock:{type:Boolean},
     remark:{type:String, required:true},
+    negotiable: {type: String},
     categoryID:{type:mongoose.Schema.Types.ObjectId,required:true},
     subcategoryID:{type:mongoose.Schema.Types.ObjectId,required:true},
     brandID:{type:mongoose.Schema.Types.ObjectId,required:true},

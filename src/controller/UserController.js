@@ -18,7 +18,7 @@ exports.userRegistration = async(req, res) =>{
 
         let code = Math.floor(100000+Math.random()*900000)
         let EmailText = `Your Verification Code is = ${code}`
-        let EmailSubject = "Your Email verification code from Wave Market."
+        let EmailSubject = "Your Email verification code from E commerce Solution."
 
         let users = await UserModel.find({email:email}).count()
 
@@ -26,7 +26,7 @@ exports.userRegistration = async(req, res) =>{
             await EmailSend(email, EmailText, EmailSubject)
             await OtpModel.updateOne({email:email}, {$set: {otp:code}}, {upsert: true})
             if(password===confirmPassword){
-                let result = await UserModel.create({
+                await UserModel.create({
                     email: email,
                     firstName: firstName,
                     lastName: lastName,
@@ -52,24 +52,34 @@ exports.userRegistration = async(req, res) =>{
 }
 
 
-exports.EmailVerify = async(req,res)=>{
-    try{
-        let email = req.params.email;
-        let otp = req.params.otp;
-        let status = 0;
-        let total = await OtpModel.find({ email: email, otp: otp, status: status }).count();
+exports.EmailVerify = async (req, res) => {
+    try {
+        const email = req.params.email;
+        const otp = req.params.otp;
+        const status = 0;
+
+        console.log(`Verifying email: ${email}, otp: ${otp}`);
+
+        if (typeof email !== 'string' || typeof otp !== 'string') {
+            res.status(400).json({ status: "fail", data: "Invalid input types" });
+            return;
+        }
+
+        const total = await OtpModel.countDocuments({ email: email, otp: otp, status: status });
+        console.log(`Found ${total} matching documents`);
+
         if (total === 1) {
             await OtpModel.updateOne({ email: email }, { $set: { otp: '0', status: '1' } });
             res.status(200).json({ status: "success", data: "Verification Completed" });
         } else {
             res.status(400).json({ status: "fail", data: "Invalid verification" });
         }
-        
-        }catch(err){
-            res.status(400).json({status:"fail",data:err.toString()})
-        
-        }  
-}
+    } catch (err) {
+        console.error(`Error during verification: ${err}`);
+        res.status(400).json({ status: "fail", data: err.toString() });
+    }
+};
+
 
 exports.userLogin = async(req,res) => {
     try{
@@ -110,7 +120,6 @@ exports.getProfile = async(req,res) =>{
         res.status(200).json({status: "success",  data: result})
     }catch(err){
         res.status(400).json({status:"fail",data:err.toString()})
-
     }
 }
 
