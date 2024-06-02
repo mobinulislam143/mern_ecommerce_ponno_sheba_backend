@@ -5,6 +5,7 @@ const ProductController = require('../Controller/ProductController')
 const locationController = require('../Controller/locationController')
 const FavouriteController = require('../Controller/FavouriteController')
 const AdminController = require('../Controller/AdminController')
+const ReportController = require('../Controller/ReportController')
 const AuthVerifyMiddleware = require('../middleware/AuthVerification')
 const AdminAuthVerification = require('../middleware/AdminAuthVerification')
 
@@ -61,7 +62,7 @@ router.get("/logout", AuthVerifyMiddleware, UserController.logout)
 
 // User Product Manage
 router.post('/createUserProduct', AuthVerifyMiddleware, upload.array('images', 6), ProductController.createProduct)
-router.post('/reportProduct/:productId', AuthVerifyMiddleware, ProductController.ReportProduct)
+router.post('/reportProduct/:productId', AuthVerifyMiddleware, ReportController.ReportProduct)
 router.post('/commentProduct/:productId', AuthVerifyMiddleware, ProductController.CommentProduct)
 router.get('/getCommentByProduct/:productId', AuthVerifyMiddleware, ProductController.getCommentByProduct)
 router.get('/usersProduct', AuthVerifyMiddleware, ProductController.usersProduct)
@@ -77,6 +78,7 @@ router.get('/getFavoriteProduct', AuthVerifyMiddleware, FavouriteController.getF
 router.delete('/RemoveFavourite', AuthVerifyMiddleware, FavouriteController.RemoveFavourite)
 //Product Listing
 router.get('/getAllCategory',  ProductController.getAllCategory)
+router.get('/ProductListByCategory/:CategoryId',  ProductController.ProductListByCategory)
 router.get('/searchProductbyKeyword/:keyword', AuthVerifyMiddleware, ProductController.searchProductbyKeyword)
 router.get('/ProductListByFilter',  ProductController.ProductListByFilter)
 router.get('/LocationCategorySearch/:division/:district/:category',  ProductController.LocationCategorySearch)

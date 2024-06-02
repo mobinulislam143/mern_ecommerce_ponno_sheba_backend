@@ -1,5 +1,4 @@
 const ProductModel = require('../models/ProductModel')
-const ReportsModel = require('../models/ReportsModel')
 const CategoryModel = require('../models/CategoryModel')
 const SubCategoryModel = require('../models/SubCategoryModel')
 const ProductDetailsModel = require('../models/ProductDetailsModel')
@@ -67,6 +66,7 @@ exports.createProduct = async (req, res) => {
             discountPrice: reqBody.discountPrice,
             stock: reqBody.stock,
             remark: reqBody.remark,
+            negotiable: reqBody.negotiable,
             categoryID,
             productDetailID: createProductDetails._id,
             subcategoryID,
@@ -101,20 +101,37 @@ exports.getAllCategory = async(req,res)=>{
         res.status(400).json({status:"fail",data: err.toString()})
     }
 }
-
-exports.ReportProduct = async(req,res)=>{
+exports.ProductListByCategory = async(req,res)=>{
     try{
-        let user_id = new Object(req.headers.user_id)
-        let productId = req.params.productId
-        let reqBody = req.body
-        reqBody.userID = user_id
-        reqBody.productID = productId
-        let result = await ReportsModel.create(reqBody)
+        let CategoryID = new ObjectId(req.params.CategoryId)
+        let MatchStage = {$match: {categoryID: CategoryID}}
+
+        let JoinWithBrandStage = {$lookup:{from:'brands',localField:'brandID', foreignField:'_id', as:'brands'}}
+        let JoinWithProductDetailsStage = { $lookup: { from: 'productdetails',localField: 'productDetailID', foreignField: '_id', as: 'details' }};
+
+        let JoinWithCategoryStage = {$lookup:{from:'categories',localField:'categoryID', foreignField:'_id', as:'categorys'}}
+
+        
+        let UnWindBrandStage = {$unwind:'$brands'}
+        let UnwindDetailsStage = {$unwind: '$details'}
+        let UnwindCategoryStage = {$unwind: '$categorys'}
+
+        let result= await  ProductModel.aggregate([
+            MatchStage,
+            JoinWithBrandStage,
+            JoinWithCategoryStage,
+            UnWindBrandStage,
+            UnwindCategoryStage,
+            JoinWithProductDetailsStage,
+            UnwindDetailsStage
+        ])
         res.status(200).json({status: "success", data: result})
     }catch(err){
         res.status(400).json({status:"fail",data: err.toString()})
     }
 }
+
+
 exports.CommentProduct = async(req,res)=>{
     try{
         let user_id = new Object(req.headers.user_id)
@@ -190,6 +207,8 @@ exports.productDetailsById = async(req,res)=>{
         let JoinWithSubCategoryStage = { $lookup: { from: 'subcategories',localField: 'subcategoryID', foreignField: '_id', as: 'subcategory' }};
         let JoinWithProductDetailsStage = { $lookup: { from: 'productdetails',localField: 'productDetailID', foreignField: '_id', as: 'details' }};
         let JoinWithUserStage = { $lookup: { from: 'users',localField: 'userID', foreignField: '_id', as: 'user' }};
+        let JoinWithLocationStage = { $lookup: { from: 'locations', localField: '_id', foreignField: 'productIds', as: 'locations' } };
+
 
 
         let UnWindBrandStage = {$unwind:'$brand'}
@@ -197,8 +216,11 @@ exports.productDetailsById = async(req,res)=>{
         let UnwindSubCategoryStage = {$unwind: '$subcategory'}
         let UnwindDetailsStage = {$unwind: '$details'}
         let UnwindUserStage = {$unwind: '$user'}
+        let UnwindLocationStage = { $unwind: { path: '$locations', preserveNullAndEmptyArrays: true } };
 
-        let ProjectionStage = {$project: {'brand._id':0, 'category._id': 0, 'subcategory.categoryID': 0 , 'user._id':0, 'subcategory._id': 0, 'category.createdAt': 0, 'category.updatedAt': 0, 'details.updatedAt': 0, 'details.createdAt': 0, 'user.createdAt': 0,'user.updatedAt': 0, }}
+        
+
+        let ProjectionStage = {$project: {'brand._id':0, 'category._id': 0, 'subcategory.categoryID': 0 , 'user._id':0, 'subcategory._id': 0, 'category.createdAt': 0, 'category.updatedAt': 0, 'details.updatedAt': 0, 'details.createdAt': 0, 'user.updatedAt': 0, }}
 
         let data = await ProductModel.aggregate([
             MatchProductStage,
@@ -207,12 +229,14 @@ exports.productDetailsById = async(req,res)=>{
             JoinWithSubCategoryStage,
             JoinWithProductDetailsStage,
             JoinWithUserStage,
+            JoinWithLocationStage,
             
             UnWindBrandStage,
             UnwindCategoryStage,
             UnwindSubCategoryStage,
             UnwindDetailsStage,
             UnwindUserStage,
+            UnwindLocationStage,
             ProjectionStage
         ])
         res.status(200).json({status: "success", data: data})
@@ -221,6 +245,7 @@ exports.productDetailsById = async(req,res)=>{
 
     }
 }
+
 exports.deleteUserproduct = async(req,res)=>{
     try{
         let productId = req.body.productId

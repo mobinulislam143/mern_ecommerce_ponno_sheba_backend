@@ -161,6 +161,7 @@ exports.createProduct = async (req, res) => {
             discountPrice: reqBody.discountPrice,
             stock: reqBody.stock,
             remark: reqBody.remark,
+            negotiable: reqBody.negotiable,
             categoryID,
             productDetailID: createProductDetails._id,
             subcategoryID,
