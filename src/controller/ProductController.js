@@ -3,7 +3,6 @@ const CategoryModel = require('../models/CategoryModel')
 const SubCategoryModel = require('../models/SubCategoryModel')
 const ProductDetailsModel = require('../models/ProductDetailsModel')
 const LocationModel = require('../models/LocationModel')
-const CommentModel = require('../models/CommentModel')
 const cloudinary = require('cloudinary').v2
 const mongoose  = require('mongoose')
 const BrandModel = require('../models/BrandsModel')
@@ -38,7 +37,6 @@ exports.createProduct = async (req, res) => {
             features: reqBody.features,
             age: reqBody.age,
             edition: reqBody.edition,
-            placeOfOrigin: reqBody.placeOfOrigin,
             material: reqBody.material,
             style: reqBody.style
         };
@@ -107,7 +105,12 @@ exports.ProductListByCategory = async(req,res)=>{
         let MatchStage = {$match: {categoryID: CategoryID}}
 
         let JoinWithBrandStage = {$lookup:{from:'brands',localField:'brandID', foreignField:'_id', as:'brands'}}
-        let JoinWithProductDetailsStage = { $lookup: { from: 'productdetails',localField: 'productDetailID', foreignField: '_id', as: 'details' }};
+        let JoinWithProductDetailsStage = { $lookup: { from: 'productdetails',localField: 'productDetailID', foreignField: '_id', as: 'details' }}
+
+        let JoinWithLocationStage = { $lookup: { from: 'locations', localField: '_id', foreignField: 'productIds', as: 'locations' } };
+
+        let UnwindLocationStage = { $unwind: { path: '$locations', preserveNullAndEmptyArrays: true } };
+
 
         let JoinWithCategoryStage = {$lookup:{from:'categories',localField:'categoryID', foreignField:'_id', as:'categorys'}}
 
@@ -120,8 +123,10 @@ exports.ProductListByCategory = async(req,res)=>{
             MatchStage,
             JoinWithBrandStage,
             JoinWithCategoryStage,
+            JoinWithLocationStage,
             UnWindBrandStage,
             UnwindCategoryStage,
+            UnwindLocationStage,
             JoinWithProductDetailsStage,
             UnwindDetailsStage
         ])
@@ -132,50 +137,6 @@ exports.ProductListByCategory = async(req,res)=>{
 }
 
 
-exports.CommentProduct = async(req,res)=>{
-    try{
-        let user_id = new Object(req.headers.user_id)
-        let productId = req.params.productId
-        let reqBody = req.body
-        reqBody.userID = user_id
-        reqBody.productID = productId
-        let result = await CommentModel.create(reqBody)
-        res.status(200).json({status: "success", data: result})
-    }catch(err){
-        res.status(400).json({status:"fail",data: err.toString()})
-    }
-}
-exports.getCommentByProduct = async(req,res)=>{
-    try{
-        let productId = new ObjectId(req.params.productId)
-        let MatchProductStage = {$match: {productID: productId}}
-        let JoinWithUserStage = { $lookup: { from: 'users',localField: 'userID', foreignField: '_id', as: 'user' }};
-        
-        let UnwindproductUserStage = {$unwind: '$user'}
-        let ProjectionStage = {$project: {'user._id': 0,'user.age': 0,'user.mobile': 0,'user.address': 0,'user.createdAt': 0,'user.updatedAt': 0,'user.password': 0,'user.confirmPassword': 0,  }}
-        let AddFieldStage = {
-            $addFields: {
-                createdAt: {
-                    $dateToString:{
-                        date: "$createdAt",
-                        format: "%d-%m-%Y"
-                    }
-                }
-            }
-        }
-
-        let result = await CommentModel.aggregate([
-            MatchProductStage,
-            JoinWithUserStage,
-            UnwindproductUserStage,
-            ProjectionStage,
-            AddFieldStage
-        ])
-        res.status(200).json({status: "success", data: result})
-    }catch(err){
-        res.status(400).json({status:"fail",data: err.toString()})
-    }
-}
 
 exports.usersProduct = async(req,res)=>{
     try{
@@ -209,6 +170,22 @@ exports.productDetailsById = async(req,res)=>{
         let JoinWithUserStage = { $lookup: { from: 'users',localField: 'userID', foreignField: '_id', as: 'user' }};
         let JoinWithLocationStage = { $lookup: { from: 'locations', localField: '_id', foreignField: 'productIds', as: 'locations' } };
 
+        let AddFieldStage = {
+            $addFields: {
+              createdAt: {
+                $dateToString: {
+                  date: "$createdAt",
+                  format: "%d-%m-%Y %H:%M:%S",
+                },
+              },
+              "user.createdAt": {
+                $dateToString: {
+                  date: "$user.createdAt",
+                  format: "%d-%m-%Y", 
+                },
+              },
+            },
+          };
 
 
         let UnWindBrandStage = {$unwind:'$brand'}
@@ -237,6 +214,7 @@ exports.productDetailsById = async(req,res)=>{
             UnwindDetailsStage,
             UnwindUserStage,
             UnwindLocationStage,
+            AddFieldStage,
             ProjectionStage
         ])
         res.status(200).json({status: "success", data: data})

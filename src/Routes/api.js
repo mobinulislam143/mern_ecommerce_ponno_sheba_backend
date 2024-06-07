@@ -6,6 +6,7 @@ const locationController = require('../Controller/locationController')
 const FavouriteController = require('../Controller/FavouriteController')
 const AdminController = require('../Controller/AdminController')
 const ReportController = require('../Controller/ReportController')
+const CommentController = require('../Controller/CommentController')
 const AuthVerifyMiddleware = require('../middleware/AuthVerification')
 const AdminAuthVerification = require('../middleware/AdminAuthVerification')
 
@@ -63,8 +64,10 @@ router.get("/logout", AuthVerifyMiddleware, UserController.logout)
 // User Product Manage
 router.post('/createUserProduct', AuthVerifyMiddleware, upload.array('images', 6), ProductController.createProduct)
 router.post('/reportProduct/:productId', AuthVerifyMiddleware, ReportController.ReportProduct)
-router.post('/commentProduct/:productId', AuthVerifyMiddleware, ProductController.CommentProduct)
-router.get('/getCommentByProduct/:productId', AuthVerifyMiddleware, ProductController.getCommentByProduct)
+//comment product
+router.post('/commentProduct/:productId', AuthVerifyMiddleware, CommentController.CommentProduct)
+router.get('/getCommentByProduct/:productId', CommentController.getCommentByProduct)
+
 router.get('/usersProduct', AuthVerifyMiddleware, ProductController.usersProduct)
 router.get('/product-details/:productId',  ProductController.productDetailsById)
 router.post('/deleteUserproduct', AuthVerifyMiddleware, ProductController.productDetailsById)
