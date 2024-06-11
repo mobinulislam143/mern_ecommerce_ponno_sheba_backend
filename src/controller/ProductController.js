@@ -90,15 +90,36 @@ exports.createProduct = async (req, res) => {
 
 
 
+exports.getAllCategory = async (req, res) => {
+    try {
+        let productCount = {
+            $lookup: {
+                from: 'products',
+                localField: '_id',
+                foreignField: 'categoryID',
+                as: 'products'
+            }
+        };
+        // let projectStage = {
+        //     $project: {
+        //         _id: 1,
+        //         categoryName: 1,
+        //         categoryImg: 1,
+        //         productCount: { $size: "$products" } 
+        //     }
+        // };
+        let projectStage = {$project: {_id: 1, categoryName: 1, categoryImg: 1, productCount: {$size: '$products'}}}
+        let result = await CategoryModel.aggregate([
+            productCount,
+            projectStage
+        ]);
 
-exports.getAllCategory = async(req,res)=>{
-    try{
-        let result = await CategoryModel.find()
-        res.status(200).json({status: "success", data: result})
-    }catch(err){
-        res.status(400).json({status:"fail",data: err.toString()})
+        res.status(200).json({ status: "success", data: result });
+    } catch (err) {
+        res.status(400).json({ status: "fail", data: err.toString() });
     }
-}
+};
+
 exports.ProductListByCategory = async(req,res)=>{
     try{
         let CategoryID = new ObjectId(req.params.CategoryId)
@@ -327,7 +348,7 @@ exports.getAllProduct = async (req, res) => {
             ProjectionStage
         ]);
 
-        res.status(200).json({ status: "success",product: allproduct, data: data });
+        res.status(200).json({ status: "success", Allproduct: allproduct, data: data });
     } catch (err) {
         res.status(400).json({ status: "fail", data: err.toString() });
     }
