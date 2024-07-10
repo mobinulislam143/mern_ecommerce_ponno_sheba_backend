@@ -90,6 +90,28 @@ exports.createProduct = async (req, res) => {
 
 
 
+exports.getAllBrand = async (req, res) => {
+    try {
+        let productCount = {
+            $lookup: {
+                from: 'products',
+                localField: '_id',
+                foreignField: 'brandID',
+                as: 'products'
+            }
+        };
+        let projectStage = {$project: {_id: 1, brandName: 1,  productCount: {$size: '$products'}}}
+        let result = await BrandModel.aggregate([
+            productCount,
+            projectStage
+        ]);
+
+        res.status(200).json({ status: "success", data: result });
+    } catch (err) {
+        res.status(400).json({ status: "fail", data: err.toString() });
+    }
+};
+
 exports.getAllCategory = async (req, res) => {
     try {
         let productCount = {
@@ -100,20 +122,31 @@ exports.getAllCategory = async (req, res) => {
                 as: 'products'
             }
         };
-        // let projectStage = {
-        //     $project: {
-        //         _id: 1,
-        //         categoryName: 1,
-        //         categoryImg: 1,
-        //         productCount: { $size: "$products" } 
-        //     }
-        // };
         let projectStage = {$project: {_id: 1, categoryName: 1, categoryImg: 1, productCount: {$size: '$products'}}}
         let result = await CategoryModel.aggregate([
             productCount,
             projectStage
         ]);
+        res.status(200).json({ status: "success", data: result });
+    } catch (err) {
+        res.status(400).json({ status: "fail", data: err.toString() });
+    }
+};
+exports.getSubCategory = async (req, res) => {
+    try {
+        let CategoryID = new ObjectId(req.params.CategoryId)
+        let MatchStage = {$match: {_id: CategoryID}}
 
+
+        let JoinWithSubCategoryStage = {$lookup: {from:'subcategories', localField:'_id', foreignField: 'categoryID', as:'subCategory'}}
+
+        let UnWindSubCategoryStage = {$unwind: '$subCategory'}
+        
+        let result = await CategoryModel.aggregate([
+            MatchStage,
+            JoinWithSubCategoryStage,
+            UnWindSubCategoryStage
+        ])
         res.status(200).json({ status: "success", data: result });
     } catch (err) {
         res.status(400).json({ status: "fail", data: err.toString() });

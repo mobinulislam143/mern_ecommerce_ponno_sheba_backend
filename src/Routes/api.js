@@ -42,8 +42,8 @@ const upload = multer({ storage: storage });
   router.post('/AddLocation', AdminAuthVerification, AdminController.AddLocation)
   router.post('/removeLocation/:locId', AdminAuthVerification, AdminController.removeLocation)
 
-  router.get("/getdistricts/:division", locationController.getdistricts)
   router.get("/getdivision", locationController.getdivision)
+  router.get("/getdistricts/:division", locationController.getdistricts)
 
 
   router.get("/getProductByDivision/:division", locationController.ProductByDivision)
@@ -61,7 +61,7 @@ router.post("/deleteAccount", AuthVerifyMiddleware, UserController.deleteAccount
 router.post("/updateImage", AuthVerifyMiddleware, upload.single('image'), UserController.updateImage) 
 router.get("/logout", AuthVerifyMiddleware, UserController.logout) 
 
-// User Product Manage
+// User Product Manages
 router.post('/createUserProduct', AuthVerifyMiddleware, upload.array('images', 6), ProductController.createProduct)
 router.post('/reportProduct/:productId', AuthVerifyMiddleware, ReportController.ReportProduct)
 //comment product
@@ -81,6 +81,8 @@ router.get('/getFavoriteProduct', AuthVerifyMiddleware, FavouriteController.getF
 router.delete('/RemoveFavourite', AuthVerifyMiddleware, FavouriteController.RemoveFavourite)
 //Product Listing
 router.get('/getAllCategory',  ProductController.getAllCategory)
+router.get('/getSubCategory/:CategoryId',  ProductController.getSubCategory)
+router.get('/getAllBrand',  ProductController.getAllBrand)
 router.get('/ProductListByCategory/:CategoryId',  ProductController.ProductListByCategory)
 router.get('/searchProductbyKeyword/:keyword', AuthVerifyMiddleware, ProductController.searchProductbyKeyword)
 router.get('/ProductListByFilter',  ProductController.ProductListByFilter)

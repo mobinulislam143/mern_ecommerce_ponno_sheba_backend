@@ -11,16 +11,28 @@ exports.getdistricts = async(req,res)=>{
 
     }
 }
-exports.getdivision = async(req,res)=>{
-    try{
-      
-        let result = await LocationModel.find()
-        res.status(200).json({status: "success", data: result})
-    }catch(err){
-        res.status(400).json({status:"fail",data:err.toString()})
+exports.getdivision = async (req, res) => {
+    try {
+        // Fetch all locations
+        let locations = await LocationModel.find();
 
+
+        // Extract unique divisions
+        let uniqueDivisions = {};
+       locations.forEach(location => {
+        if(!uniqueDivisions[location.division]){
+            uniqueDivisions[location.division] = location
+        }
+       })
+       let uniqueDivisionsArray = Object.values(uniqueDivisions)
+        // Send the response with unique divisions
+        res.status(200).json({ status: "success", data: uniqueDivisionsArray });
+    } catch (err) {
+        // Handle any errors that occur and send an error response
+        res.status(400).json({ status: "fail", data: err.toString() });
     }
-}
+};
+
 
 exports.ProductByDivision = async (req, res) => {
     try {
