@@ -44,6 +44,7 @@ const upload = multer({ storage: storage });
 
   router.get("/getdivision", locationController.getdivision)
   router.get("/getdistricts/:division", locationController.getdistricts)
+  
 
 
   router.get("/getProductByDivision/:division", locationController.ProductByDivision)

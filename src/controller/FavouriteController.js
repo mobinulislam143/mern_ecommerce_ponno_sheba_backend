@@ -2,7 +2,6 @@ const mongoose  = require('mongoose')
 const ObjectId = mongoose.Types.ObjectId
 const FavouriteModel = require('../models/FavouriteModel')
 
-
 exports.AddFavourite = async(req,res)=>{
     try{
         let productId = new ObjectId(req.params.productId);
