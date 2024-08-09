@@ -217,6 +217,7 @@ exports.productDetailsById = async(req,res)=>{
     try{
         let productId = new ObjectId(req.params.productId);
         let MatchProductStage = { $match: { _id: productId } };
+        
         let JoinWithBrandStage = {$lookup:{from:'brands', localField:'brandID',foreignField: '_id', as:'brand'}}        
         let JoinWithCategoryStage = { $lookup: { from: 'categories',localField: 'categoryID', foreignField: '_id', as: 'category' }};
         let JoinWithSubCategoryStage = { $lookup: { from: 'subcategories',localField: 'subcategoryID', foreignField: '_id', as: 'subcategory' }};

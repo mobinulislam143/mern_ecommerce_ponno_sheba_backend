@@ -71,7 +71,7 @@ router.get('/getCommentByProduct/:productId', CommentController.getCommentByProd
 
 router.get('/usersProduct', AuthVerifyMiddleware, ProductController.usersProduct)
 router.get('/product-details/:productId',  ProductController.productDetailsById)
-router.post('/deleteUserproduct', AuthVerifyMiddleware, ProductController.productDetailsById)
+router.post('/deleteUserproduct', AuthVerifyMiddleware, ProductController.deleteUserproduct)
 
 router.get('/getallProducts',  ProductController.getAllProduct)
 
